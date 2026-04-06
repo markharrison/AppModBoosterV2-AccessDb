@@ -25,8 +25,6 @@ param sqlAdminGroupName string
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: sqlServerName
   location: location
-  // System-assigned identity enables the server to call Microsoft Graph
-  // for Entra ID user/group lookups (required for Entra-only auth)
   identity: {
     type: 'SystemAssigned'
   }
@@ -35,30 +33,13 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
     restrictOutboundNetworkAccess: 'Disabled'
-  }
-}
-
-// Entra ID administrator (required before enabling azureADOnlyAuthentication)
-resource sqlServerAadAdmin 'Microsoft.Sql/servers/administrators@2023-08-01-preview' = {
-  parent: sqlServer
-  name: 'ActiveDirectory'
-  properties: {
-    administratorType: 'ActiveDirectory'
-    login: sqlAdminGroupName
-    sid: sqlAdminGroupObjectId
-    tenantId: tenant().tenantId
-  }
-}
-
-// Enforce Entra-only authentication (no SQL logins allowed)
-resource sqlServerAadOnlyAuth 'Microsoft.Sql/servers/azureADOnlyAuthentications@2023-08-01-preview' = {
-  parent: sqlServer
-  name: 'Default'
-  dependsOn: [
-    sqlServerAadAdmin
-  ]
-  properties: {
-    azureADOnlyAuthentication: true
+    administrators: {
+      administratorType: 'ActiveDirectory'
+      azureADOnlyAuthentication: true
+      login: sqlAdminGroupName
+      sid: sqlAdminGroupObjectId
+      tenantId: tenant().tenantId
+    }
   }
 }
 
