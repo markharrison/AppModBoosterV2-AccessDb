@@ -9,7 +9,7 @@
 param env string
 
 @description('Azure region for all resources.')
-param location string = 'eastus'
+param location string = 'uksouth'
 
 @description('App Service Plan SKU. Default P1v3 Premium.')
 param planSku string = 'P1v3'

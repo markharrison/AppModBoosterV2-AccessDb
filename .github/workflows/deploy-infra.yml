@@ -49,7 +49,7 @@ jobs:
               run: |
                   az group create \
                     --name "rg-accessdbapp-${{ inputs.environment }}" \
-                    --location eastus \
+                    --location uksouth \
                     --output none
 
             - name: Deploy Bicep template

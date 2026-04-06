@@ -4,7 +4,7 @@
 using '../main.bicep'
 
 param env = 'prod'
-param location = 'eastus'
+param location = 'uksouth'
 param planSku = 'P1v3'
 
 // Replace with the Object ID of your Azure AD group for SQL administration
