@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item active">Reports</li>
+    </ol>
+</nav>
+
+<h1 class="page-heading mb-4"><i class="bi bi-bar-chart me-2"></i>Reports</h1>
+
+<div class="row g-3">
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-receipt me-2 text-primary"></i>Invoice</h5>
+                <p class="card-text text-muted small">Print a formatted invoice for any order.</p>
+                <form method="get" asp-action="Invoice" class="d-flex gap-2">
+                    <input type="number" name="orderId" class="form-control form-control-sm" placeholder="Order #" min="1" required />
+                    <button type="submit" class="btn btn-sm btn-primary">View</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-person-lines-fill me-2 text-success"></i>Sales by Employee</h5>
+                <p class="card-text text-muted small">Monthly sales breakdown by sales rep.</p>
+                <a asp-action="SalesByEmployee" class="btn btn-sm btn-success">View Report</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-box-seam me-2 text-warning"></i>Sales by Product</h5>
+                <p class="card-text text-muted small">Monthly or quarterly sales by product.</p>
+                <a asp-action="SalesByProduct" class="btn btn-sm btn-warning text-white">View Report</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-envelope-at me-2 text-info"></i>Employee Email Directory</h5>
+                <p class="card-text text-muted small">Printable employee email list.</p>
+                <a asp-action="EmployeeEmailList" class="btn btn-sm btn-info text-white">View Report</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-telephone me-2 text-secondary"></i>Employee Phone Directory</h5>
+                <p class="card-text text-muted small">Printable employee phone list.</p>
+                <a asp-action="EmployeePhoneList" class="btn btn-sm btn-secondary">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>

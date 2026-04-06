@@ -1,0 +1,86 @@
+@using WebApp.Models
+@model ProductDetail
+@{
+    ViewData["Title"] = Model?.ProductName ?? "Product";
+    var orders = ViewBag.Orders as List<ProductOrderSummary> ?? new();
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+        <li class="breadcrumb-item active">@Model?.ProductName</li>
+    </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="page-heading"><i class="bi bi-box me-2"></i>@Model?.ProductName</h1>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-5">
+        <div class="card">
+            <div class="card-header">Product Details</div>
+            <div class="card-body">
+                <form asp-action="Detail" asp-route-id="@Model?.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Product Code <span class="text-danger">*</span></label>
+                        <input name="ProductCode" value="@Model?.ProductCode" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Product Name <span class="text-danger">*</span></label>
+                        <input name="ProductName" value="@Model?.ProductName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Price</label>
+                        <input name="UnitPrice" value="@Model?.UnitPrice" class="form-control" type="number" step="0.01" min="0" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="ProductDescription" class="form-control" rows="3">@Model?.ProductDescription</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+                    </div>
+                </form>
+
+                <form asp-action="Delete" asp-route-id="@Model?.Id" method="post" class="mt-2"
+                      onsubmit="return confirm('Delete this product?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cart3 me-1"></i>Order History (@orders.Count)</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Order #</th><th>Date</th><th>Customer</th><th class="text-end">Qty</th><th class="text-end">Unit Price</th><th class="text-end">Extended</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in orders)
+                            {
+                                <tr>
+                                    <td><a asp-controller="Orders" asp-action="Detail" asp-route-id="@o.OrderId">#@o.OrderId</a></td>
+                                    <td>@o.OrderDate?.ToString("MM/dd/yy")</td>
+                                    <td>@o.CustomerName</td>
+                                    <td class="text-end">@o.Quantity</td>
+                                    <td class="text-end">@o.UnitPrice.ToString("C")</td>
+                                    <td class="text-end">@o.ExtendedPrice.ToString("C")</td>
+                                </tr>
+                            }
+                            @if (!orders.Any()){ <tr><td colspan="6" class="text-center text-muted py-2">No order history.</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
