@@ -8,8 +8,8 @@ param planName string
 @description('Azure region.')
 param location string
 
-@description('App Service Plan SKU (e.g. B1, B2, S1).')
-param planSku string = 'B1'
+@description('App Service Plan SKU (e.g. S1, S2, P1v3).')
+param planSku string = 'S1'
 
 // ---------------------------------------------------------------------------
 // App Service Plan (Linux)
