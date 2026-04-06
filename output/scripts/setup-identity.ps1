@@ -61,7 +61,7 @@ foreach ($env in $Environments) {
     # -------------------------------------------------------------------------
     # 1. App Registration (idempotent)
     # -------------------------------------------------------------------------
-    $existing = az ad app list --display-name $displayName --output json | ConvertFrom-Json
+    $existing = @(az ad app list --display-name $displayName --output json | ConvertFrom-Json)
     if ($existing.Count -gt 0) {
         $appId = $existing[0].appId
         $objectId = $existing[0].id
@@ -77,7 +77,7 @@ foreach ($env in $Environments) {
     # -------------------------------------------------------------------------
     # 2. Service Principal (idempotent)
     # -------------------------------------------------------------------------
-    $sp = az ad sp list --filter "appId eq '$appId'" --output json | ConvertFrom-Json
+    $sp = @(az ad sp list --filter "appId eq '$appId'" --output json | ConvertFrom-Json)
     if ($sp.Count -eq 0) {
         Write-Host "  Creating service principal..."
         az ad sp create --id $appId --output none
@@ -91,7 +91,7 @@ foreach ($env in $Environments) {
     # -------------------------------------------------------------------------
     $credName = "github-$GithubOrg-$GithubRepo-$env"
     $subject = "repo:$($GithubOrg)/$($GithubRepo):environment:$env"
-    $existingCreds = az ad app federated-credential list --id $objectId --output json | ConvertFrom-Json
+    $existingCreds = @(az ad app federated-credential list --id $objectId --output json | ConvertFrom-Json)
     $credExists = $existingCreds | Where-Object { $_.name -eq $credName }
 
     if ($credExists) {
@@ -105,11 +105,13 @@ foreach ($env in $Environments) {
             audiences   = @("api://AzureADTokenExchange")
             description = "GitHub Actions OIDC for $env environment"
         } | ConvertTo-Json -Compress
-
+        $tmpFile = [System.IO.Path]::GetTempFileName()
+        Set-Content -Path $tmpFile -Value $credJson -Encoding utf8
         az ad app federated-credential create `
             --id $objectId `
-            --parameters $credJson `
+            --parameters "@$tmpFile" `
             --output none
+        Remove-Item $tmpFile
         Write-Host "  Federated credential created."
     }
 
@@ -127,11 +129,13 @@ foreach ($env in $Environments) {
             audiences   = @("api://AzureADTokenExchange")
             description = "GitHub Actions OIDC for main branch push/workflow_dispatch"
         } | ConvertTo-Json -Compress
-
+        $tmpFileBranch = [System.IO.Path]::GetTempFileName()
+        Set-Content -Path $tmpFileBranch -Value $credJsonBranch -Encoding utf8
         az ad app federated-credential create `
             --id $objectId `
-            --parameters $credJsonBranch `
+            --parameters "@$tmpFileBranch" `
             --output none
+        Remove-Item $tmpFileBranch
         Write-Host "  Branch federated credential created."
     } else {
         Write-Host "  Branch federated credential exists."
@@ -149,11 +153,11 @@ foreach ($env in $Environments) {
         Write-Host "  Run deploy-infra workflow first, then rerun this script to assign RBAC."
     } else {
         $scope = "/subscriptions/$SubscriptionId/resourceGroups/$resourceGroup"
-        $roleAssignments = az role assignment list `
+        $roleAssignments = @(az role assignment list `
             --assignee $spObjectId `
             --role Contributor `
             --scope $scope `
-            --output json | ConvertFrom-Json
+            --output json | ConvertFrom-Json)
 
         if ($roleAssignments.Count -gt 0) {
             Write-Host "  Contributor role already assigned on $resourceGroup"
