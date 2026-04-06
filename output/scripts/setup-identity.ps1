@@ -51,12 +51,12 @@ if (-not $account) {
 az account set --subscription $SubscriptionId
 Write-Host "Active subscription: $($account.name) ($SubscriptionId)" -ForegroundColor Green
 
-foreach ($env in $Environments) {
-    $displayName = "sp-$AppNamePrefix-$env"
-    $resourceGroup = "rg-$AppNamePrefix-$env"
+foreach ($envName in $Environments) {
+    $displayName = "sp-$AppNamePrefix-$envName"
+    $resourceGroup = "rg-$AppNamePrefix-$envName"
 
     Write-Host ""
-    Write-Host "--- Environment: $env ---" -ForegroundColor Yellow
+    Write-Host "--- Environment: $envName ---" -ForegroundColor Yellow
 
     # -------------------------------------------------------------------------
     # 1. App Registration (idempotent)
@@ -89,8 +89,8 @@ foreach ($env in $Environments) {
     # -------------------------------------------------------------------------
     # 3. Federated Credential for main branch (environment-scoped)
     # -------------------------------------------------------------------------
-    $credName = "github-$GithubOrg-$GithubRepo-$env"
-    $subject = "repo:$($GithubOrg)/$($GithubRepo):environment:$env"
+    $credName = "github-$GithubOrg-$GithubRepo-$envName"
+    $subject = "repo:$($GithubOrg)/$($GithubRepo):environment:$envName"
     $existingCreds = @(az ad app federated-credential list --id $objectId --output json | ConvertFrom-Json)
     $credExists = $existingCreds | Where-Object { $_.name -eq $credName }
 
@@ -103,7 +103,7 @@ foreach ($env in $Environments) {
             issuer      = "https://token.actions.githubusercontent.com"
             subject     = $subject
             audiences   = @("api://AzureADTokenExchange")
-            description = "GitHub Actions OIDC for $env environment"
+            description = "GitHub Actions OIDC for $envName environment"
         } | ConvertTo-Json -Compress
         $tmpFile = [System.IO.Path]::GetTempFileName()
         Set-Content -Path $tmpFile -Value $credJson -Encoding utf8
@@ -142,54 +142,56 @@ foreach ($env in $Environments) {
     }
 
     # -------------------------------------------------------------------------
-    # 4. RBAC - Contributor on resource group (idempotent)
+    # 4. RBAC - Contributor on subscription (idempotent)
+    #    Assigned at subscription scope so the workflow can create the resource
+    #    group and all resources within it on first run.
     # -------------------------------------------------------------------------
     $spObjectId = (az ad sp show --id $appId --output json | ConvertFrom-Json).id
+    $scope = "/subscriptions/$SubscriptionId"
 
-    # Create resource group if it doesn't exist yet
-    $rgExists = az group exists --name $resourceGroup
-    if ($rgExists -eq 'false') {
-        Write-Host "  Resource group $resourceGroup does not exist yet - skipping role assignment."
-        Write-Host "  Run deploy-infra workflow first, then rerun this script to assign RBAC."
+    $roleAssignments = @(az role assignment list `
+        --assignee $spObjectId `
+        --role Contributor `
+        --scope $scope `
+        --output json | ConvertFrom-Json)
+
+    if ($roleAssignments.Count -gt 0) {
+        Write-Host "  Contributor role already assigned on subscription"
     } else {
-        $scope = "/subscriptions/$SubscriptionId/resourceGroups/$resourceGroup"
-        $roleAssignments = @(az role assignment list `
+        Write-Host "  Assigning Contributor role on subscription..."
+        az role assignment create `
             --assignee $spObjectId `
             --role Contributor `
             --scope $scope `
-            --output json | ConvertFrom-Json)
-
-        if ($roleAssignments.Count -gt 0) {
-            Write-Host "  Contributor role already assigned on $resourceGroup"
-        } else {
-            Write-Host "  Assigning Contributor role on $resourceGroup..."
-            az role assignment create `
-                --assignee $spObjectId `
-                --role Contributor `
-                --scope $scope `
-                --output none
-            Write-Host "  Role assigned."
-        }
+            --output none
+        Write-Host "  Role assigned."
     }
 
     # -------------------------------------------------------------------------
-    # 5. Output GitHub secrets guidance
+    # 5. Set GitHub environment secrets
     # -------------------------------------------------------------------------
     $tenantId = (az account show --output json | ConvertFrom-Json).tenantId
 
     Write-Host ""
-    Write-Host "  GitHub secrets for $env environment:" -ForegroundColor Cyan
-    Write-Host "    AZURE_CLIENT_ID     = $appId"
-    Write-Host "    AZURE_TENANT_ID     = $tenantId"
-    Write-Host "    AZURE_SUBSCRIPTION_ID = $SubscriptionId"
-    Write-Host ""
-    Write-Host "  Set them with:"
-    Write-Host "    gh secret set AZURE_CLIENT_ID --env $env --body '$appId' --repo $GithubOrg/$GithubRepo"
-    Write-Host "    gh secret set AZURE_TENANT_ID --env $env --body '$tenantId' --repo $GithubOrg/$GithubRepo"
-    Write-Host "    gh secret set AZURE_SUBSCRIPTION_ID --env $env --body '$SubscriptionId' --repo $GithubOrg/$GithubRepo"
+    Write-Host "  Setting GitHub secrets for $envName environment..." -ForegroundColor Cyan
+
+    $ghToken = gh auth token 2>$null
+    if (-not $ghToken) {
+        Write-Warning "  gh CLI not authenticated. Run: gh auth login"
+        Write-Host "  Set secrets manually:"
+        Write-Host "    AZURE_CLIENT_ID       = $appId"
+        Write-Host "    AZURE_TENANT_ID       = $tenantId"
+        Write-Host "    AZURE_SUBSCRIPTION_ID = $SubscriptionId"
+    } else {
+        gh secret set AZURE_CLIENT_ID       --env $envName --repo "$GithubOrg/$GithubRepo" --body $appId
+        gh secret set AZURE_TENANT_ID       --env $envName --repo "$GithubOrg/$GithubRepo" --body $tenantId
+        gh secret set AZURE_SUBSCRIPTION_ID --env $envName --repo "$GithubOrg/$GithubRepo" --body $SubscriptionId
+        Write-Host "  Secrets set for $envName." -ForegroundColor Green
+    }
 }
 
 Write-Host ""
 Write-Host "=== Setup complete ===" -ForegroundColor Green
 Write-Host "Next step: deploy infrastructure with deploy-infra.yml workflow,"
 Write-Host "then run setup-sql-identity.ps1 to grant managed identity DB access."
+

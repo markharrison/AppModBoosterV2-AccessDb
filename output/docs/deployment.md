@@ -75,8 +75,8 @@ The script:
 
 - Creates one app registration per environment (`sp-accessdbapp-dev`, `sp-accessdbapp-staging`, `sp-accessdbapp-prod`)
 - Configures OIDC federated credentials scoped to each GitHub environment
-- Assigns Contributor on the subscription
-- Sets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` secrets in GitHub
+- Assigns **Contributor on the subscription** (required so the workflow can create resource groups and all resources on first run)
+- Sets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` secrets in each GitHub environment
 
 The script is idempotent - safe to rerun.
 
