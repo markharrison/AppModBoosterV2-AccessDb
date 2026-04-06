@@ -5,7 +5,7 @@ using '../main.bicep'
 
 param env = 'staging'
 param location = 'eastus'
-param planSku = 'S1'
+param planSku = 'P1v3'
 
 // Replace with the Object ID of your Azure AD group for SQL administration
 // az ad group show --group "YourGroupName" --query id -o tsv

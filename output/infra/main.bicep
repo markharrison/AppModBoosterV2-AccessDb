@@ -11,8 +11,8 @@ param env string
 @description('Azure region for all resources.')
 param location string = 'eastus'
 
-@description('App Service Plan SKU. Default S1 Standard.')
-param planSku string = 'S1'
+@description('App Service Plan SKU. Default P1v3 Premium.')
+param planSku string = 'P1v3'
 
 @description('Object ID of the Azure AD group to use as SQL Server Entra administrator.')
 param sqlAdminGroupObjectId string

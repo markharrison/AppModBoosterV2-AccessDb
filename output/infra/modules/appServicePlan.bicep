@@ -9,7 +9,7 @@ param planName string
 param location string
 
 @description('App Service Plan SKU (e.g. S1, S2, P1v3).')
-param planSku string = 'S1'
+param planSku string = 'P1v3'
 
 // ---------------------------------------------------------------------------
 // App Service Plan (Linux)
