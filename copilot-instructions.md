@@ -87,7 +87,7 @@ Must support both local development and Azure cloud deployment.
 - Compute: 1 × Azure Linux App Service Plan (default `B1` but overridable)
   - All web applications share the same plan
 - Database: 1 × Azure SQL Database (Basic tier)
-- Location: default `eastus2` but overridable
+- Location: default `northeurope` but overridable
 - Azure environments: Development | Staging | Production ... allow scripts to deploy environments independently
 - Azure resource naming: `{resourcetype}-{app}-{env}`
 - Use Application Insights for telemetry for `prod` environment only
@@ -147,8 +147,8 @@ All scripts must be PowerShell — do not use Bash.
 ### Infrastructure
 
 - Use only `dev`, `staging`, and `prod` for all environment names everywhere, including GitHub environments and OIDC subjects.
-- The canonical application name prefix is `northwind2`. This value must be the default for every `$AppName` / `app-name` parameter across all scripts, workflows, and OIDC setup. Never use a different default.
-- Azure resource naming follows `{resourcetype}-{app}-{env}` (e.g., `app-northwind2-api-dev`, `sql-northwind2-dev`, `sqldb-northwind2-dev`). All appsettings, connection strings, and API base URLs must use the same naming convention — no hardcoded names that differ from the convention.
+- The canonical application name prefix is `northwind`. This value must be the default for every `$AppName` / `app-name` parameter across all scripts, workflows, and OIDC setup. Never use a different default.
+- Azure resource naming follows `{resourcetype}-{app}-{env}` (e.g., `app-northwind-api-dev`, `sql-northwind-dev`, `sqldb-northwind-dev`). All appsettings, connection strings, and API base URLs must use the same naming convention — no hardcoded names that differ from the convention.
 - Azure App Service terminates SSL at the load balancer. Apps receive plain HTTP on port 8080 internally. All apps must check the `DisableHttpsRedirect` configuration setting (set to `"true"` in Azure) and skip `UseHttpsRedirection()` when it is `"true"`. Do NOT use environment-name checks (e.g., `IsEnvironment("local")`) to control HTTPS redirect — use the config setting so it works correctly in all environments.
 
 ### Application Resilience
@@ -159,7 +159,7 @@ All scripts must be PowerShell — do not use Bash.
 ### Scripts
 
 - Ensure PowerShell scripts are robust — they must be idempotent and safe to rerun after partial completion.
-- Every script and workflow that accepts an `AppName` / `app-name` parameter must default to `northwind2`. Verify consistency across all files before finishing.
+- Every script and workflow that accepts an `AppName` / `app-name` parameter must default to `northwind`. Verify consistency across all files before finishing.
 
 ### GitHub Workflows
 

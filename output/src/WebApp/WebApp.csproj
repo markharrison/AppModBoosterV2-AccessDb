@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>WebApp</RootNamespace>
-    <AssemblyName>WebApp</AssemblyName>
   </PropertyGroup>
 
 </Project>
