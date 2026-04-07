@@ -31,21 +31,25 @@ Two web applications:
 
 CORS is not required as the API App is only called server-side by the Web App.
 
-### Database
-
-Database: SQL Server
-
-- Database seeding with sample data on startup (disabled in production) — done by the API App.
-
 ### Environments
 
 Support both local development and cloud deployment.
+
+Local developer environent:
+
+- `local` (dev test on developer machines)
 
 Cloud environments are:
 
 - `dev` (Development)
 - `staging` (Staging)
 - `prod` (Production)
+
+### Database
+
+Database: SQL Server
+
+- Database seeding with sample data (for environments: `local` and `dev`) — is done by the API App on startup
 
 ---
 
@@ -77,14 +81,16 @@ Must support both local development and Azure cloud deployment.
 
 #### Cloud Deployment
 
-- Use Bicep for Infrastructure as Code
-- Compute: 1 × Azure Linux App Service Plan (default `B1 Basic` but overridable, `DOTNETCORE|10.0`)
+- Use "AZ scripts" for Infrastructure as Code
+- Deployment scripts should be designed to be run locally or via GitHub Workflows
+
+- Compute: 1 × Azure Linux App Service Plan (default `B1` but overridable)
   - All web applications share the same plan
 - Database: 1 × Azure SQL Database (Basic tier)
-- Location: default `eastus` but overridable
-- Azure environments: Development | Staging | Production
+- Location: default `eastus2` but overridable
+- Azure environments: Development | Staging | Production ... allow scripts to deploy environments independently
 - Azure resource naming: `{resourcetype}-{app}-{env}`
-- Use Application Insights for telemetry
+- Use Application Insights for telemetry for `prod` environment only
 
 ### Developer Platform
 
@@ -136,22 +142,28 @@ All scripts must be PowerShell — do not use Bash.
 - The Web App must know the URL of the API App. In local dev mode, use the following ports:
   - Web App runs on port **5200**
   - API App runs on port **5201**
-- These ports must be set in `launchSettings.json`, `appsettings.Development.json`, run-local script, and documentation. No file should use different ports.
+- These ports must be set in `launchSettings.json`, `appsettings.local.json`,`appsettings.dev.json` , run-local script, and documentation. No file should use different ports.
 
 ### Infrastructure
 
 - Use only `dev`, `staging`, and `prod` for all environment names everywhere, including GitHub environments and OIDC subjects.
+- The canonical application name prefix is `northwind2`. This value must be the default for every `$AppName` / `app-name` parameter across all scripts, workflows, and OIDC setup. Never use a different default.
+- Azure resource naming follows `{resourcetype}-{app}-{env}` (e.g., `app-northwind2-api-dev`, `sql-northwind2-dev`, `sqldb-northwind2-dev`). All appsettings, connection strings, and API base URLs must use the same naming convention — no hardcoded names that differ from the convention.
+- Azure App Service terminates SSL at the load balancer. Apps receive plain HTTP on port 8080 internally. All apps must check the `DisableHttpsRedirect` configuration setting (set to `"true"` in Azure) and skip `UseHttpsRedirection()` when it is `"true"`. Do NOT use environment-name checks (e.g., `IsEnvironment("local")`) to control HTTPS redirect — use the config setting so it works correctly in all environments.
+
+### Application Resilience
+
+- Database migrations and seeding run on API App startup. These must include retry logic with backoff (at least 5 attempts) to handle cloud cold-start timing where the SQL Database or managed identity grant may not be immediately available.
+- Connection strings in `appsettings.{env}.json` are overridden by Azure App Settings at runtime, but they must still use the correct naming convention as documentation and fallback — never use placeholder or legacy names.
 
 ### Scripts
 
 - Ensure PowerShell scripts are robust — they must be idempotent and safe to rerun after partial completion.
+- Every script and workflow that accepts an `AppName` / `app-name` parameter must default to `northwind2`. Verify consistency across all files before finishing.
 
 ### GitHub Workflows
 
 - Use only currently supported GitHub Action versions.
 - Do not use Actions that depend on deprecated Node.js runtimes.
 - Validate that the final workflow YAML is valid before finishing.
-
-
-
-
+- Verify that all default parameter values in workflows match the defaults in the corresponding PowerShell scripts they invoke.
